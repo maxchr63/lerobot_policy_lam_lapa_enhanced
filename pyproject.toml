@@ -1,0 +1,10 @@
+[project]
+authors = [{ name = "OpenAI Codex" }]
+dependencies = []
+name = "lerobot_policy_lam"
+requires-python = ">= 3.10"
+version = "0.1.0"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
