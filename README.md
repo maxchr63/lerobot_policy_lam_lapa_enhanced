@@ -31,7 +31,7 @@ lerobot-train \
   --dataset.repo_id=HuggingFaceVLA/libero \
   --policy.type=lam_lapa \
   --policy.camera_key=observation.images.image \
-  --policy.future_frames=1 \
+  --policy.future_frames=10 \
   --batch_size=8 \
   --steps=200 \
 ```
