@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 authors = [{ name = "Felix Minzenmay" }]
-dependencies = []
+dependencies = ["einops>=0.8.0", "transformers>=4.57.0"]
 name = "lerobot_policy_lam_lapa"
 requires-python = ">=3.10"
 version = "0.1.0"

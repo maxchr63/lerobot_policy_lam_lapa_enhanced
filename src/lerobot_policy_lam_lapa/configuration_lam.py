@@ -5,6 +5,8 @@ from lerobot.configs.types import NormalizationMode
 from lerobot.optim.optimizers import AdamWConfig
 from lerobot.optim.schedulers import CosineDecayWithWarmupSchedulerConfig
 
+DEFAULT_DINO_MODEL_NAME = "facebook/dinov3-vits16-pretrain-lvd1689m"
+
 
 @PreTrainedConfig.register_subclass("lam_lapa")
 @dataclass
@@ -34,7 +36,6 @@ class LAMConfig(PreTrainedConfig):
     codebook_size: int = 8
     code_seq_len: int = 4
     image_size: tuple[int, int] = (256, 256)
-    patch_size: tuple[int, int] = (32, 32)
     spatial_depth: int = 8
     temporal_depth: int = 8
     dim_head: int = 64
@@ -43,6 +44,9 @@ class LAMConfig(PreTrainedConfig):
     attn_dropout: float = 0.0
     ff_dropout: float = 0.0
     latent_ablation: str = "none"
+
+    dino_model_name: str = DEFAULT_DINO_MODEL_NAME
+    dino_freeze: bool = True
 
     vq_discarding_threshold: float = 0.02
     vq_discarding_threshold_schedule: list[tuple[float, int]] = field(
@@ -85,6 +89,10 @@ class LAMConfig(PreTrainedConfig):
             )
         if self.metrics_num_unique_codes_every_n_steps < 1:
             raise ValueError("metrics_num_unique_codes_every_n_steps must be >= 1.")
+        if tuple(self.image_size) != (256, 256):
+            raise ValueError(
+                f"lam_lapa currently supports image_size=(256, 256) only, got {self.image_size}."
+            )
 
     def validate_features(self) -> None:
         if len(self.image_features) == 0:

@@ -1,4 +1,4 @@
-"""Installable plain LAM policy plugin for LeRobot."""
+"""Installable LAM LAPA policy plugin for LeRobot with a DINOv3 encoder frontend."""
 
 try:
     import lerobot  # noqa: F401

@@ -18,8 +18,7 @@ LAMConfig = PreTrainedConfig.get_choice_class("lam_lapa")
 config = LAMConfig(
     device="cpu",
     future_frames=1,
-    image_size=(128, 128),
-    patch_size=(16, 16),
+    image_size=(256, 256),
     dim=64,
     quant_dim=8,
     codebook_size=16,
@@ -35,7 +34,7 @@ dataset_meta = SimpleNamespace(
     features={
         "observation.images.image": {
             "dtype": "video",
-            "shape": [128, 128, 3],
+            "shape": [256, 256, 3],
             "names": ["height", "width", "channel"],
         },
         "action": {
@@ -51,7 +50,7 @@ policy = make_policy(config, ds_meta=dataset_meta)
 make_pre_post_processors(config)
 
 batch = {
-    "observation.images.image": torch.randint(0, 255, (2, 2, 3, 128, 128), dtype=torch.uint8),
+    "observation.images.image": torch.randint(0, 255, (2, 2, 3, 256, 256), dtype=torch.uint8),
     "observation.images.image_is_pad": torch.tensor([[False, False], [False, True]]),
     "action": torch.randn(2, 7),
 }

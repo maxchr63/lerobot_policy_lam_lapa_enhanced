@@ -9,6 +9,7 @@ from einops.layers.torch import Rearrange
 from torch import nn
 
 from lerobot_policy_lam_lapa.core_attention import ContinuousPositionBias, Transformer
+from lerobot_policy_lam_lapa.core_dino import DinoTokenEncoder
 from lerobot_policy_lam_lapa.core_nsvq import NSVQ
 
 
@@ -33,7 +34,6 @@ class PlainLAMModel(nn.Module):
         quant_dim: int,
         codebook_size: int,
         image_size: int | tuple[int, int],
-        patch_size: int | tuple[int, int],
         spatial_depth: int,
         temporal_depth: int,
         dim_head: int,
@@ -47,13 +47,14 @@ class PlainLAMModel(nn.Module):
         codebook_replace_schedule: list[tuple[int, int]] | None,
         latent_ablation: str,
         metrics_num_unique_codes_every_n_steps: int,
+        dino_model_name: str,
+        dino_freeze: bool,
     ):
         super().__init__()
         if latent_ablation not in {"none", "permute_batch"}:
             raise ValueError(f"Unsupported latent_ablation={latent_ablation!r}.")
 
         self.image_size = pair(image_size)
-        self.patch_size = pair(patch_size)
         self.code_seq_len = code_seq_len
         self.latent_ablation = latent_ablation
         self.vq_discarding_threshold = float(vq_discarding_threshold)
@@ -62,21 +63,22 @@ class PlainLAMModel(nn.Module):
         self.metrics_num_unique_codes_every_n_steps = int(metrics_num_unique_codes_every_n_steps)
 
         image_height, image_width = self.image_size
+        self.encoder_tokenizer = DinoTokenEncoder(
+            model_name=dino_model_name,
+            image_size=self.image_size,
+            output_dim=dim,
+            freeze=dino_freeze,
+        )
+        self.grid_h, self.grid_w = self.encoder_tokenizer.output_grid_size
+        self.patch_size = (image_height // self.grid_h, image_width // self.grid_w)
         patch_height, patch_width = self.patch_size
-        if image_height % patch_height != 0 or image_width % patch_width != 0:
-            raise ValueError(
-                f"image_size={self.image_size} must be divisible by patch_size={self.patch_size}."
-            )
-
-        self.grid_h = image_height // patch_height
-        self.grid_w = image_width // patch_width
         self.spatial_rel_pos_bias = ContinuousPositionBias(dim=dim, heads=heads)
 
-        self.pixel_projection = nn.Sequential(
-            Rearrange("b c 1 (h p1) (w p2) -> b 1 h w (c p1 p2)", p1=patch_height, p2=patch_width),
-            nn.LayerNorm(channels * patch_height * patch_width),
-            nn.Linear(channels * patch_height * patch_width, dim),
-            nn.LayerNorm(dim),
+        self.decoder_context_projection = self._build_pixel_projection(
+            dim=dim,
+            channels=channels,
+            patch_height=patch_height,
+            patch_width=patch_width,
         )
         self.enc_spatial_transformer = Transformer(
             depth=spatial_depth,
@@ -125,6 +127,21 @@ class PlainLAMModel(nn.Module):
             Rearrange("b 1 h w (c p1 p2) -> b c 1 (h p1) (w p2)", p1=patch_height, p2=patch_width),
         )
 
+    @staticmethod
+    def _build_pixel_projection(
+        *,
+        dim: int,
+        channels: int,
+        patch_height: int,
+        patch_width: int,
+    ) -> nn.Sequential:
+        return nn.Sequential(
+            Rearrange("b c 1 (h p1) (w p2) -> b 1 h w (c p1 p2)", p1=patch_height, p2=patch_width),
+            nn.LayerNorm(channels * patch_height * patch_width),
+            nn.Linear(channels * patch_height * patch_width, dim),
+            nn.LayerNorm(dim),
+        )
+
     @property
     def action_shape(self) -> tuple[int, int]:
         if self.code_seq_len == 2:
@@ -146,8 +163,8 @@ class PlainLAMModel(nn.Module):
         return video
 
     def _encode_frames(self, first_frame: torch.Tensor, last_frame: torch.Tensor) -> tuple[torch.Tensor, ...]:
-        first_tokens = self.pixel_projection(first_frame)
-        last_tokens = self.pixel_projection(last_frame)
+        first_tokens = self.encoder_tokenizer(first_frame)
+        last_tokens = self.encoder_tokenizer(last_frame)
         tokens = torch.cat((first_tokens, last_tokens), dim=1)
         b = tokens.shape[0]
         video_shape = tuple(tokens.shape[:-1])
@@ -246,7 +263,7 @@ class PlainLAMModel(nn.Module):
         action_tokens = self._prepare_action_tokens(quantized_tokens)
 
         attn_bias = self.spatial_rel_pos_bias(self.grid_h, self.grid_w, device=video.device)
-        decoder_context = self.pixel_projection(first_frame).detach()
+        decoder_context = self.decoder_context_projection(first_frame).detach()
         video_shape = tuple(decoder_context.shape[:-1])
         pixel_context = rearrange(decoder_context, "b t h w d -> (b t) (h w) d")
         action_context = rearrange(action_tokens, "b t h w d -> (b t) (h w) d")

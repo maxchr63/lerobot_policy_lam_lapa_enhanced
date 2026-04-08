@@ -35,7 +35,7 @@ def _separate_weight_decayable_params(
 
 class LAMPolicy(PreTrainedPolicy):
     config_class = LAMConfig
-    name = "LAM"
+    name = "LAMDino"
 
     def __init__(self, config: LAMConfig, **_: Any):
         super().__init__(config)
@@ -46,7 +46,6 @@ class LAMPolicy(PreTrainedPolicy):
             quant_dim=config.quant_dim,
             codebook_size=config.codebook_size,
             image_size=config.image_size,
-            patch_size=config.patch_size,
             spatial_depth=config.spatial_depth,
             temporal_depth=config.temporal_depth,
             dim_head=config.dim_head,
@@ -60,6 +59,8 @@ class LAMPolicy(PreTrainedPolicy):
             codebook_replace_schedule=config.codebook_replace_schedule,
             latent_ablation=config.latent_ablation,
             metrics_num_unique_codes_every_n_steps=config.metrics_num_unique_codes_every_n_steps,
+            dino_model_name=config.dino_model_name,
+            dino_freeze=config.dino_freeze,
         )
         self._train_step = 0
         self.reset()
