@@ -51,6 +51,26 @@ lerobot-train \
   --steps=200
 ```
 
+## Multi-camera smoke test command (2 cameras: fpv + orth)
+
+```bash
+lerobot-train \
+  --dataset.repo_id=logical/stage1_teleop_v1_smoke \
+  --dataset.mix_path=/home/maxchr/repos/lam-repos/lerobot-fork/configs/mixes/stage1_teleop_v1_smoke_mix.yaml \
+  --policy.type=lam_lapa \
+  --policy.camera_keys='["observation.images.fpv","observation.images.orth"]' \
+  --policy.camera_key_to_slot='{"observation.images.fpv":0,"observation.images.orth":1}' \
+  --policy.n_bottleneck_tokens=4 \
+  --policy.bottleneck_heads=8 \
+  --policy.view_dropout_prob=0.2 \
+  --policy.push_to_hub=false \
+  --policy.device=cuda \
+  --output_dir=outputs/train/stage1_multicam_smoke \
+  --job_name=stage1_multicam_smoke \
+  --steps=50 \
+  --wandb.enable=false
+```
+
 ## Notes
 
 - `policy.type` is `lam_lapa`.
