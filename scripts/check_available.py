@@ -32,14 +32,12 @@ _TINY = dict(
     image_size=(256, 256),
     dim=64,
     quant_dim=8,
-    codebook_size=16,
     code_seq_len=1,
     spatial_depth=1,
     temporal_depth=1,
     dim_head=16,
     heads=2,
     channels=3,
-    metrics_num_unique_codes_every_n_steps=1,
 )
 
 _FEATURES_1CAM = {

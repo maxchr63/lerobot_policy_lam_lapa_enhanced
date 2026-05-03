@@ -113,7 +113,6 @@ class LAMConfig(PreTrainedConfig):
 
     dim: int = 1024
     quant_dim: int = 32
-    codebook_size: int = 8
     code_seq_len: int = 4
     image_size: tuple[int, int] = (256, 256)
     spatial_depth: int = 8
@@ -127,27 +126,6 @@ class LAMConfig(PreTrainedConfig):
 
     dino_model_name: str = DEFAULT_DINO_MODEL_NAME
     dino_freeze: bool = True
-
-    vq_discarding_threshold: float = 0.02
-    vq_discarding_threshold_schedule: list[tuple[float, int]] = field(
-        default_factory=lambda: [
-            (0.05, 1_000),
-            (0.01, 5_000),
-            (0.005, 50_000),
-            (0.0002, 500_000),
-        ]
-    )
-    codebook_replace_schedule: list[tuple[int, int]] = field(
-        default_factory=lambda: [
-            (10, 100),
-            (100, 1_000),
-            (500, 5_000),
-            (1_000, 10_000),
-            (5_000, 100_000),
-            (10_000, 500_000),
-        ]
-    )
-    metrics_num_unique_codes_every_n_steps: int = 50
 
     optimizer_lr: float = 1e-4
     optimizer_betas: tuple[float, float] = (0.9, 0.999)
@@ -167,8 +145,6 @@ class LAMConfig(PreTrainedConfig):
             raise ValueError(
                 f"future_seconds must be > 0 when set, got {self.future_seconds}."
             )
-        if self.metrics_num_unique_codes_every_n_steps < 1:
-            raise ValueError("metrics_num_unique_codes_every_n_steps must be >= 1.")
         if tuple(self.image_size) != (256, 256):
             raise ValueError(
                 f"lam_lapa currently supports image_size=(256, 256) only, got {self.image_size}."

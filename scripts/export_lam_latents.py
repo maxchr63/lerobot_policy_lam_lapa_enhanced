@@ -41,9 +41,7 @@ if str(SRC_ROOT) not in sys.path:
 from lerobot.datasets.lerobot_dataset import LeRobotDataset
 from lerobot_policy_lam_lapa.modeling_lam import LAMPolicy
 
-LATENT_FORMAT_IDS = "ids"
 LATENT_FORMAT_CONTINUOUS = "continuous"
-LATENT_FORMAT_CODEBOOK_VECTORS = "codebook_vectors"
 
 
 def parse_args() -> argparse.Namespace:
@@ -88,12 +86,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--latent-format",
-        default=LATENT_FORMAT_IDS,
-        choices=[LATENT_FORMAT_IDS, LATENT_FORMAT_CONTINUOUS, LATENT_FORMAT_CODEBOOK_VECTORS],
-        help=(
-            "Which latent representation to export: codebook ids, continuous deltas, "
-            "or hard codebook vectors."
-        ),
+        default=LATENT_FORMAT_CONTINUOUS,
+        choices=[LATENT_FORMAT_CONTINUOUS],
+        help="Which latent representation to export. Only continuous deltas are supported.",
     )
     parser.add_argument(
         "--valid-feature-name",
@@ -181,9 +176,7 @@ def _get_latent_export_spec(policy: LAMPolicy, latent_format: str) -> tuple[tupl
     code_seq_len = int(policy.config.code_seq_len)
     quant_dim = int(policy.config.quant_dim)
 
-    if latent_format == LATENT_FORMAT_IDS:
-        return (code_seq_len,), np.dtype(np.int64), -1, "int64"
-    if latent_format in {LATENT_FORMAT_CONTINUOUS, LATENT_FORMAT_CODEBOOK_VECTORS}:
+    if latent_format == LATENT_FORMAT_CONTINUOUS:
         return (code_seq_len, quant_dim), np.dtype(np.float32), 0.0, "float32"
 
     raise ValueError(f"Unsupported latent_format={latent_format!r}.")
